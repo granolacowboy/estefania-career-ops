@@ -1,0 +1,36 @@
+---
+import type { Job } from '../lib/data-loader';
+
+interface Props {
+  jobs: Job[];
+}
+
+const { jobs } = Astro.props;
+const applied = jobs.filter((j) => j.status.toLowerCase() === 'applied').length;
+const total = jobs.length;
+
+const messages = [
+  'Cada aplicación te acerca más. Hoy estás un paso adelante.',
+  'Tu experiencia en branding te hace única. Las empresas necesitan exactamente eso.',
+  'No necesitas el puesto perfecto, solo el siguiente paso correcto.',
+  `Recuerda: solo necesitas UNA oferta. Y ya vas ${applied} aplicaciones.`,
+  'Tu combinación de diseño y estrategia es difícil de encontrar. Confía en tu perfil.',
+];
+
+const dayIndex = Math.floor(Date.now() / 86_400_000) % messages.length;
+const message = messages[dayIndex];
+---
+
+<div class="rounded-lg bg-gradient-to-r from-brand-50 to-teal-50 p-4 shadow-sm dark:from-brand-800 dark:to-brand-900 dark:shadow-none" role="status">
+  <div class="flex items-start gap-3">
+    <span class="mt-0.5 text-lg" aria-hidden="true">&#10024;</span>
+    <div>
+      <p class="text-sm font-medium text-brand-800 dark:text-brand-100">{message}</p>
+      {total > 0 && (
+        <p class="mt-1 text-xs text-brand-700 dark:text-brand-400">
+          {applied} aplicaciones enviadas de {total} evaluadas
+        </p>
+      )}
+    </div>
+  </div>
+</div>

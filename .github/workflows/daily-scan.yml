@@ -1,0 +1,67 @@
+name: Daily Job Scan
+
+on:
+  schedule:
+    # Run at 7:00 AM Mexico City time (UTC-6) every day
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    # Manual trigger — Estefanía can click "Run workflow" in GitHub,
+    # or the dashboard button triggers this via API
+    inputs:
+      limit:
+        description: 'Max jobs to evaluate'
+        required: false
+        default: '10'
+
+permissions:
+  contents: write
+
+jobs:
+  scan-and-evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Scan portals for new listings
+        run: node scan.mjs
+
+      - name: Evaluate new listings
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          LIMIT="${{ github.event.inputs.limit || '10' }}"
+          node evaluate-pipeline.mjs --limit "$LIMIT"
+
+      - name: Generate application drafts for high-scoring jobs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node generate-drafts.mjs --pending
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet && git diff --cached --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "career-ops-bot"
+          git config user.email "bot@mhsbsolutions.com"
+          git add data/ reports/
+          git commit -m "chore: daily scan $(date +%Y-%m-%d)
+
+          Automated scan and evaluation run.
+
+          Co-Authored-By: career-ops-bot <bot@mhsbsolutions.com>"
+          git push

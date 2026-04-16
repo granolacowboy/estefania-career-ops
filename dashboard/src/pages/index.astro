@@ -1,0 +1,408 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import OnboardingGuide from '../components/OnboardingGuide.astro';
+import Stats from '../components/Stats.astro';
+import StatusFilter from '../components/StatusFilter.astro';
+import JobCard from '../components/JobCard.astro';
+import EmptyState from '../components/EmptyState.astro';
+import ScanButton from '../components/ScanButton.astro';
+import FeedbackForm from '../components/FeedbackForm.astro';
+import EncouragementBanner from '../components/EncouragementBanner.astro';
+import SubmitUrl from '../components/SubmitUrl.astro';
+import { loadApplications, loadReports, loadProfile, loadDraftStatus } from '../lib/data-loader';
+
+const profile = loadProfile();
+const jobs = loadApplications().sort((a, b) => b.scoreNum - a.scoreNum);
+const reports = loadReports();
+const draftNums = loadDraftStatus();
+const hasJobs = jobs.length > 0;
+
+const now = new Date();
+const lastUpdated = now.toLocaleDateString('es-MX', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const statusLabels: Record<string, string> = {
+  Evaluated: 'Evaluada',
+  Applied: 'Aplicada',
+  Responded: 'Respondida',
+  Interview: 'Entrevista',
+  Offer: 'Oferta',
+  Rejected: 'Rechazada',
+  Discarded: 'Descartada',
+  Skip: 'Descartada',
+};
+---
+
+<Layout title={`${profile.name} — Oportunidades`}>
+  <Header name={profile.name} headline={profile.headline} location={profile.location} />
+
+  <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+    {hasJobs ? (
+      <>
+        <Stats jobs={jobs} />
+
+        <div class="mt-4">
+          <EncouragementBanner jobs={jobs} />
+        </div>
+
+        <div class="mt-4">
+          <OnboardingGuide />
+        </div>
+
+        <div class="mt-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h2 class="text-lg font-semibold text-brand-800 dark:text-brand-100">Oportunidades</h2>
+              <ScanButton />
+            </div>
+            <p class="text-xs text-gray-400 dark:text-brand-500">Actualizado: {lastUpdated}</p>
+          </div>
+
+          <div class="mt-3">
+            <SubmitUrl />
+          </div>
+
+          <div class="mt-3">
+            <StatusFilter jobs={jobs} />
+          </div>
+
+          <div class="mt-4 space-y-3">
+            {jobs.map((job) => {
+              const reportSlug = job.reportPath.replace('reports/', '').replace('.md', '');
+              const report = reports.get(reportSlug);
+              const hasDraft = draftNums.has(job.num);
+              return (
+                <JobCard job={job} reportContent={report?.content} hasDraft={hasDraft} />
+              );
+            })}
+          </div>
+        </div>
+      </>
+    ) : (
+      <EmptyState />
+    )}
+  </main>
+
+  <section class="mx-auto mt-8 max-w-5xl px-4 pb-12 sm:px-6">
+    <FeedbackForm />
+  </section>
+
+  <script>
+    const statusLabels: Record<string, string> = {
+      Evaluated: 'Evaluada',
+      Applied: 'Aplicada',
+      Responded: 'Respondida',
+      Interview: 'Entrevista',
+      Offer: 'Oferta',
+      Rejected: 'Rechazada',
+      Discarded: 'Descartada',
+      Skip: 'Descartada',
+    };
+
+    document.addEventListener('click', async (e) => {
+      const btn = (e.target as HTMLElement).closest('[data-action="update-status"]') as HTMLButtonElement | null;
+      if (!btn) return;
+
+      const jobNum = btn.dataset.jobNum;
+      const status = btn.dataset.status;
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        const res = await fetch('/api/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobNum, status }),
+        });
+
+        if (res.ok) {
+          const pill = btn.closest('article')?.querySelector('[class*="rounded-full"][class*="text-xs"]');
+          if (pill) {
+            pill.textContent = statusLabels[status!] || status!;
+          }
+          btn.textContent = '✓';
+          btn.classList.add('bg-emerald-50', 'text-emerald-600', 'border-emerald-200');
+        } else {
+          btn.textContent = 'Error';
+          btn.classList.add('text-red-500');
+          setTimeout(() => { btn.disabled = false; btn.textContent = status!; }, 2000);
+        }
+      } catch {
+        btn.textContent = 'Error';
+        btn.classList.add('text-red-500');
+        setTimeout(() => { btn.disabled = false; btn.textContent = status!; }, 2000);
+      }
+    });
+
+    // ── ApplyPanel interactions ──────────────────────────────────────
+
+    function showPanelState(panel: HTMLElement, state: string) {
+      panel.querySelectorAll('[data-panel-state]').forEach((el) => {
+        (el as HTMLElement).classList.toggle('hidden', el.getAttribute('data-panel-state') !== state);
+      });
+    }
+
+    function showToast(panel: HTMLElement, msg: string) {
+      const toast = panel.querySelector('[data-toast]') as HTMLElement;
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    function populatePanel(panel: HTMLElement, data: any) {
+      const clField = panel.querySelector('[data-field="cover-letter-text"]') as HTMLTextAreaElement;
+      if (clField) clField.value = data.coverLetter || '';
+
+      const qaContainer = panel.querySelector('[data-questions-container]') as HTMLElement;
+      if (qaContainer && Array.isArray(data.questions)) {
+        qaContainer.innerHTML = '';
+        data.questions.forEach((q: any, i: number) => {
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-medium text-gray-500 dark:text-brand-400">${q.q}</label>
+              <div class="flex items-center gap-1">
+                <button data-action="feedback" data-section="questions" data-signal="up" class="rounded p-1.5 text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer dark:text-brand-500 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400" title="Me gusta">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/></svg>
+                </button>
+                <button data-action="feedback" data-section="questions" data-signal="down" class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 cursor-pointer dark:text-brand-500 dark:hover:bg-red-900/30 dark:hover:text-red-400" title="No me gusta">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/></svg>
+                </button>
+                <button data-action="copy" data-target="qa-text-${i}" class="rounded px-2 py-1 text-xs text-brand-600 hover:bg-brand-100 cursor-pointer dark:text-brand-400 dark:hover:bg-brand-800">Copiar</button>
+              </div>
+            </div>
+            <textarea data-field="qa-text-${i}" data-qa-index="${i}" rows="3" class="w-full rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-700 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400 resize-y dark:border-brand-700 dark:bg-brand-800 dark:text-brand-200">${q.a || ''}</textarea>
+          `;
+          qaContainer.appendChild(div);
+        });
+      }
+
+      const hmField = panel.querySelector('[data-field="linkedin-hm-text"]') as HTMLTextAreaElement;
+      const recField = panel.querySelector('[data-field="linkedin-rec-text"]') as HTMLTextAreaElement;
+      if (hmField) hmField.value = data.linkedin?.hiringManager || '';
+      if (recField) recField.value = data.linkedin?.recruiter || '';
+
+      updateCharCounts(panel);
+    }
+
+    function updateCharCounts(panel: HTMLElement) {
+      panel.querySelectorAll('[data-char-count]').forEach((counter) => {
+        const fieldName = counter.getAttribute('data-char-count')!;
+        const field = panel.querySelector(`[data-field="${fieldName}"]`) as HTMLTextAreaElement;
+        if (field) counter.textContent = String(field.value.length);
+      });
+    }
+
+    function collectDraftData(panel: HTMLElement) {
+      const coverLetter = (panel.querySelector('[data-field="cover-letter-text"]') as HTMLTextAreaElement)?.value || '';
+      const questions: { q: string; a: string }[] = [];
+      panel.querySelectorAll('[data-qa-index]').forEach((ta) => {
+        const textarea = ta as HTMLTextAreaElement;
+        const label = textarea.parentElement?.querySelector('label');
+        questions.push({
+          q: label?.textContent || '',
+          a: textarea.value,
+        });
+      });
+      const linkedin = {
+        hiringManager: (panel.querySelector('[data-field="linkedin-hm-text"]') as HTMLTextAreaElement)?.value || '',
+        recruiter: (panel.querySelector('[data-field="linkedin-rec-text"]') as HTMLTextAreaElement)?.value || '',
+      };
+      return { coverLetter, questions, linkedin };
+    }
+
+    async function loadOrGenerateDrafts(panel: HTMLElement, jobNum: string) {
+      const hasDraft = panel.dataset.hasDraft === 'true';
+      showPanelState(panel, 'loading');
+
+      try {
+        let data;
+        if (hasDraft) {
+          const res = await fetch(`/api/get-drafts?jobNum=${jobNum}`);
+          if (!res.ok) throw new Error('Failed to load drafts');
+          data = await res.json();
+        } else {
+          const res = await fetch('/api/generate-drafts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobNum }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: 'Error desconocido' }));
+            throw new Error(err.error || 'Failed to generate');
+          }
+          data = await res.json();
+          panel.dataset.hasDraft = 'true';
+        }
+
+        populatePanel(panel, data);
+        showPanelState(panel, 'ready');
+        const markBtn = panel.querySelector('[data-action="mark-applied"]') as HTMLElement;
+        if (markBtn) markBtn.classList.remove('hidden');
+      } catch (err: any) {
+        const errMsg = panel.querySelector('[data-error-msg]');
+        if (errMsg) errMsg.textContent = err.message || 'Algo salió mal.';
+        showPanelState(panel, 'error');
+      }
+    }
+
+    // ── Event delegation for all ApplyPanel actions ──────────────────
+
+    document.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+
+      const toggleBtn = target.closest('[data-action="toggle-apply-panel"]') as HTMLElement;
+      if (toggleBtn) {
+        const jobNum = toggleBtn.dataset.jobNum!;
+        const panel = document.getElementById(`apply-panel-${jobNum}`);
+        if (!panel) return;
+
+        if (panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          const readyEl = panel.querySelector('[data-panel-state="ready"]') as HTMLElement;
+          if (readyEl?.classList.contains('hidden')) {
+            loadOrGenerateDrafts(panel, jobNum);
+          }
+        } else {
+          panel.classList.add('hidden');
+        }
+        return;
+      }
+
+      const retryBtn = target.closest('[data-action="retry-generate"]') as HTMLElement;
+      if (retryBtn) {
+        const panel = retryBtn.closest('[data-apply-panel]') as HTMLElement;
+        if (panel) loadOrGenerateDrafts(panel, panel.dataset.jobNum!);
+        return;
+      }
+
+      const tabBtn = target.closest('[data-tab]') as HTMLElement;
+      if (tabBtn) {
+        const panel = tabBtn.closest('[data-apply-panel]') as HTMLElement;
+        if (!panel) return;
+        const tabName = tabBtn.dataset.tab!;
+        panel.querySelectorAll('[data-tab]').forEach((t) => {
+          const el = t as HTMLElement;
+          const isActive = el.dataset.tab === tabName;
+          el.classList.toggle('text-brand-700', isActive);
+          el.classList.toggle('border-brand-500', isActive);
+          el.classList.toggle('text-gray-500', !isActive);
+          el.classList.toggle('border-transparent', !isActive);
+        });
+        panel.querySelectorAll('[data-tab-content]').forEach((c) => {
+          (c as HTMLElement).classList.toggle('hidden', c.getAttribute('data-tab-content') !== tabName);
+        });
+        return;
+      }
+
+      const copyBtn = target.closest('[data-action="copy"]') as HTMLElement;
+      if (copyBtn) {
+        const fieldName = copyBtn.dataset.target!;
+        const panel = copyBtn.closest('[data-apply-panel]') as HTMLElement;
+        const field = panel?.querySelector(`[data-field="${fieldName}"]`) as HTMLTextAreaElement;
+        if (field) {
+          await navigator.clipboard.writeText(field.value);
+          showToast(panel!, '¡Copiado!');
+        }
+        return;
+      }
+
+      const fbBtn = target.closest('[data-action="feedback"]') as HTMLElement;
+      if (fbBtn) {
+        const panel = fbBtn.closest('[data-apply-panel]') as HTMLElement;
+        if (!panel) return;
+        const jobNum = panel.dataset.jobNum!;
+        const section = fbBtn.dataset.section!;
+        const signal = fbBtn.dataset.signal!;
+
+        fbBtn.classList.add(signal === 'up' ? 'text-emerald-600' : 'text-red-600');
+
+        try {
+          const res = await fetch('/api/draft-feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobNum, section, signal }),
+          });
+          const data = await res.json();
+          showToast(panel, data.message || '¡Gracias!');
+        } catch {
+          showToast(panel, 'Error al enviar feedback');
+        }
+        return;
+      }
+
+      const saveBtn = target.closest('[data-action="save-drafts"]') as HTMLButtonElement;
+      if (saveBtn) {
+        const panel = saveBtn.closest('[data-apply-panel]') as HTMLElement;
+        if (!panel) return;
+        const jobNum = panel.dataset.jobNum!;
+        const draftData = collectDraftData(panel);
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando...';
+
+        try {
+          const res = await fetch('/api/save-drafts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobNum, ...draftData }),
+          });
+          if (res.ok) {
+            saveBtn.textContent = '¡Guardado!';
+            showToast(panel, 'Borradores guardados correctamente');
+            setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = 'Guardar cambios'; }, 2000);
+          } else {
+            throw new Error('Save failed');
+          }
+        } catch {
+          saveBtn.textContent = 'Error';
+          setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = 'Guardar cambios'; }, 2000);
+        }
+        return;
+      }
+
+      const applyBtn = target.closest('[data-action="mark-applied"]') as HTMLButtonElement;
+      if (applyBtn) {
+        const panel = applyBtn.closest('[data-apply-panel]') as HTMLElement;
+        if (!panel) return;
+        const jobNum = panel.dataset.jobNum!;
+
+        applyBtn.disabled = true;
+        applyBtn.textContent = '...';
+
+        try {
+          const res = await fetch('/api/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobNum, status: 'Applied' }),
+          });
+          if (res.ok) {
+            applyBtn.textContent = '¡Aplicado!';
+            applyBtn.classList.add('bg-emerald-100', 'border-emerald-400');
+            const card = panel.closest('article');
+            const pill = card?.querySelector('[class*="rounded-full"][class*="text-xs"]');
+            if (pill) pill.textContent = 'Aplicada';
+          } else {
+            throw new Error('Update failed');
+          }
+        } catch {
+          applyBtn.textContent = 'Error';
+          setTimeout(() => { applyBtn.disabled = false; applyBtn.textContent = 'Marcar como Aplicado'; }, 2000);
+        }
+        return;
+      }
+    });
+
+    document.addEventListener('input', (e) => {
+      const target = e.target as HTMLElement;
+      if (!target.matches('[data-field]')) return;
+      const panel = target.closest('[data-apply-panel]') as HTMLElement;
+      if (panel) updateCharCounts(panel);
+    });
+  </script>
+</Layout>

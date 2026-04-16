@@ -1,0 +1,362 @@
+# Portal Scanner Configuration — Estefanía Rincón
+# Targeting design, marketing, branding, and endomarketing roles in Mexico.
+
+title_filter:
+  positive:
+    # -- Marketing/Branding (Spanish) --
+    - "Marketing"
+    - "Mercadotecnia"
+    - "Branding"
+    - "Marca"
+    - "Comunicación"
+    - "Contenido"
+    - "Endomarketing"
+    - "Diseño"
+    - "Creativo"
+    - "Creativa"
+    - "Community Manager"
+    - "Social Media"
+    - "Redes Sociales"
+    - "Digital"
+    # -- Marketing/Branding (English) --
+    - "Brand Manager"
+    - "Marketing Manager"
+    - "Marketing Coordinator"
+    - "Content Strategist"
+    - "Content Strategy"
+    - "Creative Director"
+    - "Art Director"
+    - "Graphic Design"
+    - "Visual Design"
+    - "Internal Communications"
+    - "Employer Branding"
+    - "Packaging Design"
+  negative:
+    # -- Exclude tech/engineering roles --
+    - "Software Engineer"
+    - "Developer"
+    - "Backend"
+    - "Frontend"
+    - "DevOps"
+    - "Data Engineer"
+    - "Machine Learning"
+    - "Becario"
+    - "Practicante"
+    - "Intern"
+    - "Intendencia"
+    - "Limpieza"
+    - "Seguridad"
+    - "Chofer"
+    - "Almacén"
+    - "Recepcionista"
+    - "Vendedor de piso"
+  seniority_boost:
+    - "Senior"
+    - "Sr"
+    - "Lead"
+    - "Head"
+    - "Director"
+    - "Directora"
+    - "Coordinador"
+    - "Coordinadora"
+    - "Gerente"
+    - "Jefe"
+    - "Jefa"
+    - "Responsable"
+
+# -- Search queries --
+# Targeting Mexican job boards and LinkedIn for design/marketing roles
+
+search_queries:
+
+  # -- OCC Mundial (Mexico's largest job board) --
+  - name: OCC — Marketing Los Cabos
+    query: 'site:occ.com.mx "marketing" OR "branding" OR "diseño" "Los Cabos" OR "BCS" OR "Baja California Sur"'
+    enabled: true
+
+  - name: OCC — Marketing Remoto México
+    query: 'site:occ.com.mx "coordinador marketing" OR "brand manager" OR "estratega contenido" "remoto" OR "home office"'
+    enabled: true
+
+  - name: OCC — Diseño Gráfico Senior
+    query: 'site:occ.com.mx "diseñador gráfico" OR "diseño gráfico" "senior" OR "coordinador" OR "lead"'
+    enabled: true
+
+  - name: OCC — Comunicación Interna
+    query: 'site:occ.com.mx "comunicación interna" OR "endomarketing" OR "employer branding"'
+    enabled: true
+
+  # -- CompuTrabajo (LATAM) --
+  - name: CompuTrabajo — Marketing México
+    query: 'site:computrabajo.com.mx "marketing" OR "brand manager" OR "branding" "senior" OR "coordinador"'
+    enabled: true
+
+  - name: CompuTrabajo — Diseño México
+    query: 'site:computrabajo.com.mx "diseño gráfico" OR "director creativo" OR "directora creativa" OR "contenido"'
+    enabled: true
+
+  # -- Indeed México --
+  - name: Indeed — Marketing Los Cabos
+    query: 'site:indeed.com.mx "marketing" OR "branding" OR "diseño" "Los Cabos"'
+    enabled: true
+
+  - name: Indeed — Marketing Remoto MX
+    query: 'site:indeed.com.mx "marketing digital" OR "brand manager" OR "content strategist" "remoto" OR "home office" México'
+    enabled: true
+
+  - name: Indeed — Comunicación Interna MX
+    query: 'site:indeed.com.mx "comunicación interna" OR "endomarketing" OR "employer branding" México'
+    enabled: true
+
+  # -- LinkedIn Jobs --
+  - name: LinkedIn — Marketing BCS
+    query: 'site:linkedin.com/jobs "marketing" OR "branding" "Los Cabos" OR "Baja California Sur"'
+    enabled: true
+
+  - name: LinkedIn — Creative Director MX
+    query: 'site:linkedin.com/jobs "creative director" OR "directora creativa" OR "brand manager" México'
+    enabled: true
+
+  - name: LinkedIn — Content Strategy MX Remote
+    query: 'site:linkedin.com/jobs "content strategist" OR "estratega de contenido" México remote OR remoto'
+    enabled: true
+
+  # -- Bumeran (LATAM) --
+  - name: Bumeran — Marketing MX
+    query: 'site:bumeran.com.mx "marketing" OR "diseño" OR "branding" "senior" OR "coordinador"'
+    enabled: true
+
+  # -- Glassdoor MX --
+  - name: Glassdoor — Marketing Design MX
+    query: 'site:glassdoor.com.mx "marketing manager" OR "brand manager" OR "graphic designer" México'
+    enabled: true
+
+  # -- Hospitality-specific (her industry) --
+  - name: Hospitality Marketing — All boards
+    query: '"marketing" OR "branding" "hotel" OR "hospitality" OR "hotelería" "Los Cabos" OR "Cancún" OR "Riviera Maya" México'
+    enabled: true
+
+  - name: Hospitality — Endomarketing
+    query: '"comunicación interna" OR "endomarketing" "hotel" OR "resort" OR "hotelería" México'
+    enabled: true
+
+  # -- Remote US/International (English-language roles she can do from Mexico) --
+  - name: Remote — Brand Marketing Manager
+    query: '"brand manager" OR "marketing manager" remote "Latin America" OR "LATAM" OR "Mexico" OR "anywhere"'
+    enabled: true
+
+  - name: Remote — Creative Director US
+    query: '"creative director" OR "art director" remote "LATAM" OR "Latin America" OR "worldwide" OR "anywhere"'
+    enabled: true
+
+  - name: Remote — Content Strategist US
+    query: '"content strategist" OR "content marketing manager" remote "LATAM" OR "Mexico" OR "worldwide"'
+    enabled: true
+
+  - name: Remote — Graphic Design Lead US
+    query: '"senior graphic designer" OR "design lead" OR "visual designer" remote "LATAM" OR "Latin America" OR "worldwide"'
+    enabled: true
+
+  - name: WeWorkRemotely — Marketing Design
+    query: 'site:weworkremotely.com "marketing" OR "brand" OR "design" OR "creative"'
+    enabled: true
+
+  - name: RemoteOK — Marketing Design
+    query: 'site:remoteok.com "marketing" OR "brand manager" OR "graphic designer" OR "content strategist"'
+    enabled: true
+
+  - name: LinkedIn Remote — Marketing LATAM
+    query: 'site:linkedin.com/jobs "marketing" OR "brand manager" OR "creative director" "remote" "LATAM" OR "Latin America"'
+    enabled: true
+
+  - name: Indeed Remote — Marketing Bilingual
+    query: 'site:indeed.com "marketing manager" OR "brand manager" "remote" "bilingual" OR "Spanish" OR "LATAM"'
+    enabled: true
+
+# -- Tracked companies --
+# Mexican companies and multinationals with Mexico offices that hire marketing/design
+
+tracked_companies:
+
+  # -- Hospitality (her strongest vertical) --
+
+  - name: Grupo Posadas
+    careers_url: https://www.posadas.com/es/trabaja-con-nosotros
+    scan_method: websearch
+    scan_query: '"Grupo Posadas" marketing OR branding OR diseño OR comunicación careers OR vacantes'
+    notes: "Largest Mexican hotel group (Fiesta Americana, Live Aqua, Grand Fiesta). Strong marketing org."
+    enabled: true
+
+  - name: Vidanta
+    careers_url: https://www.vidanta.com/es/careers
+    scan_method: websearch
+    scan_query: '"Vidanta" marketing OR branding OR diseño OR comunicación vacantes OR careers'
+    notes: "Luxury resort developer. Nuevo Vallarta, Riviera Maya, Los Cabos."
+    enabled: true
+
+  - name: Palace Resorts
+    careers_url: https://www.palaceresorts.com/careers
+    scan_method: websearch
+    scan_query: '"Palace Resorts" marketing OR branding OR diseño OR comunicación vacantes'
+    notes: "All-inclusive luxury resorts. Cancún base."
+    enabled: true
+
+  - name: Marriott México
+    careers_url: https://careers.marriott.com
+    scan_method: websearch
+    scan_query: 'site:careers.marriott.com marketing OR branding OR "communications" "Mexico" OR "Los Cabos"'
+    notes: "Global chain with big Los Cabos presence."
+    enabled: true
+
+  - name: Hilton México
+    careers_url: https://jobs.hilton.com
+    scan_method: websearch
+    scan_query: 'site:jobs.hilton.com marketing OR communications "Mexico" OR "Los Cabos"'
+    notes: "Global chain, marketing roles in Mexico."
+    enabled: true
+
+  - name: Hyatt México
+    careers_url: https://careers.hyatt.com
+    scan_method: websearch
+    scan_query: 'site:careers.hyatt.com marketing OR communications "Mexico" OR "Los Cabos"'
+    notes: "Park Hyatt, Andaz — Los Cabos properties."
+    enabled: true
+
+  # -- Consumer goods (matches her Lab. Ordóñez experience) --
+
+  - name: Grupo Bimbo
+    careers_url: https://careers.grupobimbo.com
+    scan_method: websearch
+    scan_query: '"Grupo Bimbo" marketing OR branding OR diseño vacantes OR careers México'
+    notes: "World's largest bakery company. HQ CDMX. Strong brand/marketing org."
+    enabled: true
+
+  - name: L'Oréal México
+    careers_url: https://careers.loreal.com
+    scan_method: websearch
+    scan_query: 'site:careers.loreal.com marketing OR brand OR "content" "Mexico"'
+    notes: "Beauty/consumer goods. Brand management roles."
+    enabled: true
+
+  - name: Unilever México
+    careers_url: https://careers.unilever.com
+    scan_method: websearch
+    scan_query: 'site:careers.unilever.com marketing OR brand OR design "Mexico"'
+    notes: "FMCG giant. CDMX office."
+    enabled: true
+
+  - name: P&G México
+    careers_url: https://www.pgcareers.com
+    scan_method: websearch
+    scan_query: 'site:pgcareers.com brand OR marketing "Mexico"'
+    notes: "Brand management powerhouse."
+    enabled: true
+
+  - name: Nestlé México
+    careers_url: https://www.nestle.com.mx/jobs
+    scan_method: websearch
+    scan_query: '"Nestlé" marketing OR branding OR diseño OR comunicación vacantes México'
+    notes: "CDMX HQ. Large marketing org."
+    enabled: true
+
+  # -- Agencies --
+
+  - name: Ogilvy México
+    careers_url: https://www.ogilvy.com/careers
+    scan_method: websearch
+    scan_query: '"Ogilvy" México OR "Mexico City" careers OR vacantes marketing OR creative OR design'
+    notes: "Global creative agency. CDMX office."
+    enabled: true
+
+  - name: McCann México
+    careers_url: https://careers.mccann.com
+    scan_method: websearch
+    scan_query: '"McCann" México marketing OR creative OR diseño vacantes'
+    notes: "Major agency. CDMX."
+    enabled: true
+
+  - name: Publicis México
+    careers_url: https://careers.publicisgroupe.com
+    scan_method: websearch
+    scan_query: '"Publicis" México marketing OR creative OR strategy vacantes'
+    notes: "Publicis Groupe agencies. CDMX."
+    enabled: true
+
+  # -- Mexican tech/digital companies --
+
+  - name: Mercado Libre
+    careers_url: https://careers-meli.mercadolibre.com
+    scan_method: websearch
+    scan_query: 'site:careers-meli.mercadolibre.com marketing OR branding OR design OR content México'
+    notes: "LATAM e-commerce giant. Large marketing team."
+    enabled: true
+
+  - name: Rappi
+    careers_url: https://about.rappi.com/en/jobs
+    scan_method: websearch
+    scan_query: '"Rappi" marketing OR branding OR diseño OR content México vacantes'
+    notes: "LATAM super-app. CDMX office."
+    enabled: true
+
+  - name: Kavak
+    careers_url: https://www.kavak.com/mx/careers
+    scan_method: websearch
+    scan_query: '"Kavak" marketing OR branding OR diseño vacantes México'
+    notes: "Mexican unicorn. Used cars marketplace."
+    enabled: true
+
+  - name: Clip
+    careers_url: https://www.clip.mx/empleos
+    scan_method: websearch
+    scan_query: '"Clip" marketing OR branding OR diseño vacantes México'
+    notes: "Mexican fintech. Payments."
+    enabled: true
+
+  # -- Retail --
+
+  - name: Liverpool
+    careers_url: https://www.liverpoolbolsa.com
+    scan_method: websearch
+    scan_query: '"Liverpool" tienda marketing OR branding OR diseño OR comunicación vacantes México'
+    notes: "Mexico's largest department store chain."
+    enabled: true
+
+  - name: Coppel
+    careers_url: https://www.coppel.com/empleos
+    scan_method: websearch
+    scan_query: '"Coppel" marketing OR branding OR diseño vacantes México'
+    notes: "Major Mexican retail chain. Sinaloa HQ."
+    enabled: true
+
+  # -- Remote US companies (Greenhouse/Ashby/Lever APIs — scanned directly) --
+
+  - name: HubSpot
+    careers_url: https://www.hubspot.com/careers/jobs
+    api: https://boards-api.greenhouse.io/v1/boards/hubspot/jobs
+    notes: "Remote-friendly. Strong marketing org. Greenhouse API."
+    enabled: true
+
+  - name: Webflow
+    careers_url: https://webflow.com/careers
+    api: https://boards-api.greenhouse.io/v1/boards/webflow/jobs
+    notes: "Design/web platform. Remote-first. Greenhouse API."
+    enabled: true
+
+  - name: Figma
+    careers_url: https://www.figma.com/careers/
+    api: https://boards-api.greenhouse.io/v1/boards/figma/jobs
+    notes: "Design tool company. Greenhouse API."
+    enabled: true
+
+  - name: GitLab
+    careers_url: https://about.gitlab.com/jobs/
+    api: https://boards-api.greenhouse.io/v1/boards/gitlab/jobs
+    notes: "All-remote company. Greenhouse API."
+    enabled: true
+
+  - name: Stripe
+    careers_url: https://stripe.com/jobs
+    api: https://boards-api.greenhouse.io/v1/boards/stripe/jobs
+    notes: "Fintech. Remote roles. Strong brand/design team. Greenhouse API."
+    enabled: true
+

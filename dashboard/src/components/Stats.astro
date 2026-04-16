@@ -1,0 +1,30 @@
+---
+import type { Job } from '../lib/data-loader';
+
+interface Props {
+  jobs: Job[];
+}
+
+const { jobs } = Astro.props;
+
+const total = jobs.length;
+const topMatches = jobs.filter((j) => j.scoreNum >= 4.0).length;
+const applied = jobs.filter((j) => j.status.toLowerCase() === 'applied').length;
+const interviewing = jobs.filter((j) => j.status.toLowerCase() === 'interview').length;
+
+const stats = [
+  { label: 'Evaluadas', value: total, color: 'text-brand-600 dark:text-brand-300' },
+  { label: 'Recomendadas', value: topMatches, color: 'text-emerald-600 dark:text-emerald-400' },
+  { label: 'Aplicadas', value: applied, color: 'text-indigo-600 dark:text-indigo-400' },
+  { label: 'Entrevistas', value: interviewing, color: 'text-purple-600 dark:text-purple-400' },
+];
+---
+
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+  {stats.map((s) => (
+    <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-dark-card dark:shadow-none">
+      <p class={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+      <p class="text-sm text-gray-500 dark:text-brand-400">{s.label}</p>
+    </div>
+  ))}
+</div>

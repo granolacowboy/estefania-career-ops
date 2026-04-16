@@ -1,0 +1,70 @@
+# Career-Ops Profile — Estefanía Rincón
+# Customized for design/marketing/branding roles in Mexico
+
+candidate:
+  full_name: "Rocío Estefanía Rincón Gutiérrez"
+  email: "redrabbitcdmx@gmail.com"
+  phone: "5585511388"
+  location: "Los Cabos, BCS, México"
+  linkedin: ""
+  portfolio_url: ""
+  github: ""
+
+target_roles:
+  primary:
+    - "Coordinadora de Marketing"
+    - "Brand Manager"
+    - "Directora Creativa"
+    - "Estratega de Contenido"
+  archetypes:
+    - name: "Brand Manager / Directora de Marca"
+      level: "Senior"
+      fit: "primary"
+    - name: "Marketing Coordinator / Coordinadora de Marketing"
+      level: "Senior"
+      fit: "primary"
+    - name: "Content Strategist / Estratega de Contenido"
+      level: "Mid-Senior"
+      fit: "primary"
+    - name: "Creative Director / Directora Creativa"
+      level: "Senior"
+      fit: "secondary"
+    - name: "Endomarketing Lead / Comunicación Interna"
+      level: "Senior"
+      fit: "secondary"
+    - name: "Graphic Design Lead / Diseñadora Senior"
+      level: "Senior"
+      fit: "adjacent"
+
+narrative:
+  headline: "Diseñadora creativa y estratega de marca con 10+ años en branding, endomarketing y contenido visual"
+  exit_story: "Lideré la comunicación interna y endomarketing en Grupo Pueblo Bonito (cadena hotelera premium en Los Cabos) durante 4 años. Paralelamente he construido identidades de producto exitosas como Pomada DE LA TÍA® en Laboratorios Ordóñez. Busco un rol donde pueda aplicar mi experiencia completa en branding, estrategia de contenido y comunicación — tanto interna como externa."
+  superpowers:
+    - "Branding completo: desde identidad visual hasta posicionamiento de producto"
+    - "Endomarketing y comunicación interna que impulsa cultura organizacional"
+    - "Diseño de empaques y materiales promocionales con impacto comercial"
+    - "Estrategia de contenido digital y crecimiento orgánico en redes"
+    - "Suite completa de Adobe (Illustrator, Photoshop, InDesign, Premiere)"
+  proof_points:
+    - name: "Pomada DE LA TÍA®"
+      url: ""
+      hero_metric: "Identidad de producto completa — empaque, etiquetas, materiales promocionales"
+    - name: "Endomarketing Pueblo Bonito"
+      url: ""
+      hero_metric: "4 años liderando comunicación interna en cadena hotelera premium"
+
+compensation:
+  target_range_mxn: "$25,000-40,000 MXN mensuales"
+  target_range_usd: "$2,500-5,000 USD/month (remote US roles)"
+  currency: "MXN / USD"
+  minimum_mxn: "$20,000 MXN"
+  minimum_usd: "$2,000 USD"
+  location_flexibility: "Presencial en Los Cabos, remoto en México, o remoto para empresas internacionales/estadounidenses"
+
+location:
+  country: "México"
+  city: "Los Cabos, BCS"
+  timezone: "MST (UTC-7)"
+  visa_status: "Ciudadana mexicana"
+  remote_work: "Available for remote US/international roles from Mexico (UTC-7, overlaps US Pacific/Mountain/Central)"
+  languages: "Spanish (native), English (professional working proficiency)"

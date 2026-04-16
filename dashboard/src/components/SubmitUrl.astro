@@ -1,0 +1,70 @@
+---
+---
+
+<div class="flex gap-2" id="submit-url-form">
+  <input
+    id="url-input"
+    type="url"
+    placeholder="Pega una URL de oferta..."
+    class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-brand-700 dark:bg-brand-800 dark:text-brand-100 dark:placeholder:text-brand-600"
+    required
+  />
+  <button
+    id="url-submit-btn"
+    class="shrink-0 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 active:scale-95 cursor-pointer"
+  >
+    Evaluar
+  </button>
+</div>
+<p id="url-status" class="mt-2 hidden text-xs"></p>
+
+<script>
+  const input = document.getElementById('url-input') as HTMLInputElement;
+  const btn = document.getElementById('url-submit-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('url-status')!;
+
+  btn.addEventListener('click', async () => {
+    const url = input.value.trim();
+    if (!url) return;
+
+    try { new URL(url); } catch {
+      statusEl.textContent = 'URL no válida';
+      statusEl.className = 'mt-2 text-xs text-red-500';
+      statusEl.classList.remove('hidden');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    statusEl.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/submit-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        statusEl.textContent = data.message || 'Agregada — resultados en ~10 min';
+        statusEl.className = 'mt-2 text-xs text-emerald-600 dark:text-emerald-400';
+        input.value = '';
+      } else {
+        statusEl.textContent = data.error || 'Error al enviar';
+        statusEl.className = 'mt-2 text-xs text-red-500 dark:text-red-400';
+      }
+    } catch {
+      statusEl.textContent = 'Error de conexión';
+      statusEl.className = 'mt-2 text-xs text-red-500 dark:text-red-400';
+    }
+
+    statusEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Evaluar';
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btn.click();
+  });
+</script>

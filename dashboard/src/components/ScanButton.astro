@@ -1,0 +1,43 @@
+---
+---
+
+<button
+  id="scan-btn"
+  class="inline-flex items-center gap-2 rounded-lg bg-accent-400 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-500 active:scale-95 cursor-pointer"
+>
+  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+  </svg>
+  <span id="scan-label">Buscar nuevas ofertas</span>
+</button>
+
+<script>
+  const btn = document.getElementById('scan-btn') as HTMLButtonElement;
+  const label = document.getElementById('scan-label')!;
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    label.textContent = 'Escaneando...';
+    btn.classList.add('opacity-70');
+
+    try {
+      const res = await fetch('/api/scan', { method: 'POST' });
+      const data = await res.json();
+
+      if (res.ok) {
+        label.textContent = 'Escaneo iniciado';
+        setTimeout(() => {
+          label.textContent = 'Resultados en ~10 min';
+        }, 2000);
+      } else {
+        label.textContent = 'Error — intenta de nuevo';
+        btn.disabled = false;
+        btn.classList.remove('opacity-70');
+      }
+    } catch {
+      label.textContent = 'Error de conexión';
+      btn.disabled = false;
+      btn.classList.remove('opacity-70');
+    }
+  });
+</script>

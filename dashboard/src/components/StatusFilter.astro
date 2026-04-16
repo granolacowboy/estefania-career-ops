@@ -1,0 +1,64 @@
+---
+import type { Job } from '../lib/data-loader';
+
+interface Props {
+  jobs: Job[];
+}
+
+const { jobs } = Astro.props;
+
+const statusLabels: Record<string, string> = {
+  Evaluated: 'Evaluadas',
+  Applied: 'Aplicadas',
+  Responded: 'Respondidas',
+  Interview: 'Entrevistas',
+  Offer: 'Ofertas',
+  Rejected: 'Rechazadas',
+  Discarded: 'Descartadas',
+  Skip: 'Descartadas',
+};
+
+const statuses = ['Todas', ...new Set(jobs.map((j) => j.status).filter(Boolean))];
+---
+
+<nav class="flex flex-wrap gap-2" id="status-filter">
+  {statuses.map((s) => (
+    <button
+      data-status={s === 'Todas' ? 'all' : s}
+      class:list={[
+        'rounded-full px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-500',
+        s === 'Todas'
+          ? 'bg-brand-600 text-white'
+          : 'bg-white text-gray-600 hover:bg-brand-100 dark:bg-dark-card dark:text-brand-300 dark:hover:bg-brand-800',
+      ]}
+    >
+      {s === 'Todas' ? s : (statusLabels[s] || s)}
+    </button>
+  ))}
+</nav>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('#status-filter button');
+  const cards = document.querySelectorAll<HTMLElement>('[data-job-status]');
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const status = btn.dataset.status;
+
+      buttons.forEach((b) => {
+        b.classList.remove('bg-brand-600', 'text-white');
+        b.classList.add('bg-white', 'text-gray-600', 'dark:bg-dark-card', 'dark:text-brand-300');
+      });
+      btn.classList.remove('bg-white', 'text-gray-600', 'dark:bg-dark-card', 'dark:text-brand-300');
+      btn.classList.add('bg-brand-600', 'text-white');
+
+      cards.forEach((card) => {
+        if (status === 'all' || card.dataset.jobStatus === status) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+</script>

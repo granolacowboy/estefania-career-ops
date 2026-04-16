@@ -1,0 +1,127 @@
+---
+import type { Job } from '../lib/data-loader';
+import { scoreColor, statusColor } from '../lib/data-loader';
+import ApplyPanel from './ApplyPanel.astro';
+
+interface Props {
+  job: Job;
+  reportContent?: string;
+  hasDraft?: boolean;
+}
+
+const { job, reportContent, hasDraft = false } = Astro.props;
+const hasReport = Boolean(reportContent);
+const cardId = `job-${job.num}`;
+const showPrepareButton = job.scoreNum >= 3.5;
+const buttonLabel = hasDraft ? 'Ver Borrador' : 'Preparar Aplicación';
+const buttonDim = job.scoreNum < 4.0;
+
+// Spanish status labels
+const statusLabels: Record<string, string> = {
+  Evaluated: 'Evaluada',
+  Applied: 'Aplicada',
+  Responded: 'Respondida',
+  Interview: 'Entrevista',
+  Offer: 'Oferta',
+  Rejected: 'Rechazada',
+  Discarded: 'Descartada',
+  Skip: 'Descartada',
+};
+const statusLabel = statusLabels[job.status] || job.status;
+
+// Google Calendar reminder URL
+const followUpDays = job.status.toLowerCase() === 'applied' ? 3 : 7;
+const followUpDate = new Date(Date.now() + followUpDays * 86_400_000);
+const calDateStr = followUpDate.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+const calEndStr = new Date(followUpDate.getTime() + 3_600_000).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+const calTitle = encodeURIComponent(`Seguimiento: ${job.company} — ${job.role}`);
+const calDetails = encodeURIComponent(`Revisar estado de aplicación.\nPuesto: ${job.role}\nEmpresa: ${job.company}\nScore: ${job.score}\n\nDashboard: estefania.mhsbsolutions.com`);
+const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${calTitle}&dates=${calDateStr}/${calEndStr}&details=${calDetails}`;
+---
+
+<article
+  data-job-status={job.status}
+  class="rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-dark-card dark:shadow-none dark:hover:shadow-brand-900/30"
+>
+  <div class="p-4 sm:p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        <h3 class="font-semibold text-brand-800 truncate dark:text-brand-100">{job.role}</h3>
+        <p class="text-sm text-gray-600 dark:text-brand-400">{job.company}</p>
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        {job.scoreNum > 0 && (
+          <span class={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${scoreColor(job.scoreNum)}`}>
+            {job.score}
+          </span>
+        )}
+        <span class={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor(job.status)}`}>
+          {statusLabel}
+        </span>
+      </div>
+    </div>
+
+    <div class="mt-3 flex items-center gap-3 text-xs text-gray-400 dark:text-brand-500">
+      <time>{job.date}</time>
+      {job.hasPdf && <span title="CV generado">PDF</span>}
+      <a
+        href={calUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-gray-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 dark:border-brand-700 dark:bg-brand-800 dark:text-brand-300 dark:hover:border-brand-500 dark:hover:bg-brand-700 dark:hover:text-brand-100"
+        title={`Recordatorio en ${followUpDays} días`}
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        Recordatorio
+      </a>
+      {job.notes && <span class="truncate text-gray-500 dark:text-brand-500">{job.notes}</span>}
+    </div>
+
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <span class="text-xs text-gray-400 dark:text-brand-500">Marcar como:</span>
+      {['Applied', 'Interview', 'Offer', 'Rejected', 'Skip'].filter(s => s !== job.status).map(s => (
+        <button
+          data-action="update-status"
+          data-job-num={job.num}
+          data-status={s}
+          class="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 cursor-pointer dark:border-brand-700 dark:text-brand-400 dark:hover:border-brand-500 dark:hover:bg-brand-800 dark:hover:text-brand-200"
+        >
+          {s === 'Applied' ? 'Aplicado' : s === 'Interview' ? 'Entrevista' : s === 'Offer' ? 'Oferta' : s === 'Rejected' ? 'Rechazado' : 'Descartar'}
+        </button>
+      ))}
+    </div>
+
+    {hasReport && (
+      <details class="mt-3">
+        <summary class="cursor-pointer text-sm font-medium text-brand-600 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-brand-400 dark:hover:text-brand-200">
+          Ver evaluaci&oacute;n
+        </summary>
+        <div class="prose prose-sm mt-2 max-h-96 overflow-y-auto rounded bg-brand-50 p-3 text-xs leading-relaxed dark:bg-brand-900 dark:text-brand-300">
+          <pre class="whitespace-pre-wrap font-sans">{reportContent}</pre>
+        </div>
+      </details>
+    )}
+
+    {showPrepareButton && (
+      <div class="mt-3">
+        <button
+          data-action="toggle-apply-panel"
+          data-job-num={job.num}
+          class:list={[
+            'rounded-md px-4 py-2.5 text-sm font-medium cursor-pointer transition-colors',
+            buttonDim
+              ? 'border border-brand-200 bg-brand-50 text-brand-600 hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-800 dark:text-brand-300 dark:hover:bg-brand-700'
+              : 'bg-accent-400 text-white hover:bg-accent-500',
+          ]}
+          title={buttonDim ? 'Este puesto tiene buen potencial' : undefined}
+        >
+          {buttonLabel}
+        </button>
+      </div>
+    )}
+
+    <ApplyPanel jobNum={job.num} hasDraft={hasDraft} />
+  </div>
+</article>
