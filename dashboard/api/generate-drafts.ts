@@ -23,14 +23,27 @@ const RATE_LIMIT_MS = 60_000;
 
 // ── GitHub helpers ──────────────────────────────────────────────────
 
-async function ghGet(repo: string, token: string, filePath: string): Promise<{ content: string; sha: string } | null> {
+async function ghGet(
+  repo: string,
+  token: string,
+  filePath: string
+): Promise<{ content: string; sha: string; status?: number; error?: string } | null> {
   const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
     },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    let bodyHint = '';
+    try {
+      const errJson = (await res.json()) as { message?: string };
+      bodyHint = errJson?.message ? ` — ${errJson.message}` : '';
+    } catch {
+      // ignore body parse failure
+    }
+    return { content: '', sha: '', status: res.status, error: `HTTP ${res.status}${bodyHint}` };
+  }
   const data = await res.json();
   return {
     content: Buffer.from(data.content, 'base64').toString('utf-8'),
@@ -256,8 +269,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ghGet(repo, ghToken, 'data/preferences.yml'),
     ]);
 
-    if (!appFile) return res.status(500).json({ error: 'Could not read applications.md' });
-    if (!cvFile) return res.status(500).json({ error: 'Could not read cv.md' });
+    const ghCheck = (file: { status?: number; error?: string } | null, path: string) => {
+      if (!file) return `No se pudo leer ${path} (GitHub API respondió null)`;
+      if (file.status) {
+        const hint =
+          file.status === 401 ? ' — verifica que GH_TOKEN no haya expirado'
+          : file.status === 403 ? ' — el token no tiene permiso Contents:Read'
+          : file.status === 404 ? ` — ¿el archivo existe en ${repo}? revisa GH_REPO`
+          : '';
+        return `No se pudo leer ${path}: ${file.error}${hint}`;
+      }
+      return null;
+    };
+    const appErr = ghCheck(appFile, 'data/applications.md');
+    if (appErr) return res.status(500).json({ error: appErr, repo });
+    const cvErr = ghCheck(cvFile, 'cv.md');
+    if (cvErr) return res.status(500).json({ error: cvErr, repo });
 
     // Find the job's report
     const jobInfo = extractJobInfo(appFile.content, jobNum);
@@ -267,15 +294,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!reportPath) return res.status(404).json({ error: `No report found for job #${jobNum}` });
 
     const reportFile = await ghGet(repo, ghToken, reportPath);
-    if (!reportFile) return res.status(404).json({ error: `Report file not found: ${reportPath}` });
+    if (!reportFile || reportFile.status) {
+      const detail = reportFile?.error ? ` (${reportFile.error})` : '';
+      return res.status(404).json({ error: `Report file not found: ${reportPath}${detail}` });
+    }
 
-    // Build prompt context
+    // Optional files: treat any HTTP error as "missing"
+    const optional = <T extends { content: string; status?: number }>(f: T | null) =>
+      (f && !f.status ? f.content : '');
+
     const language = detectLanguage(jobInfo.company, jobInfo.role, reportFile.content);
-    const prefsSection = prefsFile ? parsePreferences(prefsFile.content) : '';
+    const prefsSection = prefsFile && !prefsFile.status ? parsePreferences(prefsFile.content) : '';
     const systemPrompt = buildSystemPrompt(
       cvFile.content,
-      profileFile?.content || '',
-      profileMdFile?.content || '',
+      optional(profileFile),
+      optional(profileMdFile),
       prefsSection,
       language
     );
@@ -311,11 +344,12 @@ status: "draft"
 
     // Check if draft already exists (to get sha for update)
     const existingDraft = await ghGet(repo, ghToken, draftPath);
+    const existingSha = existingDraft && !existingDraft.status ? existingDraft.sha : undefined;
     const putRes = await ghPut(
       repo, ghToken, draftPath,
       frontmatter + content,
       `Generate application drafts for job #${padded}`,
-      existingDraft?.sha
+      existingSha
     );
 
     if (!putRes.ok) {

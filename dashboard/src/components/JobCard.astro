@@ -41,6 +41,11 @@ const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text
 
 <article
   data-job-status={job.status}
+  data-job-score={job.scoreNum}
+  data-job-company={job.company.toLowerCase()}
+  data-job-role={job.role.toLowerCase()}
+  data-job-date={job.date}
+  data-job-num={job.num}
   class="rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-dark-card dark:shadow-none dark:hover:shadow-brand-900/30"
 >
   <div class="p-4 sm:p-5">

@@ -223,6 +223,150 @@ async function fetchWeWorkRemotely(categories, titleFilter) {
   return jobs;
 }
 
+// ── Mexican portals (HTML scrapers — SSR/public endpoints) ─────────
+
+const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+async function fetchHtmlBrowserLike(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': BROWSER_UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
+      },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+const HTML_ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú',
+  Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú',
+  ntilde: 'ñ', Ntilde: 'Ñ', uuml: 'ü', Uuml: 'Ü',
+};
+
+function decodeEntities(str) {
+  if (!str) return '';
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))
+    .replace(/&([a-zA-Z]+);/g, (m, name) => HTML_ENTITIES[name] ?? m);
+}
+
+async function fetchComputrabajo(keywords, titleFilter) {
+  const jobs = [];
+  for (const kw of keywords) {
+    const slug = slugify(kw);
+    const url = `https://mx.computrabajo.com/trabajo-de-${slug}`;
+    try {
+      const html = await fetchHtmlBrowserLike(url);
+      // Match job links: /ofertas-de-trabajo/oferta-de-trabajo-de-<slug>-<hex-id>
+      const linkRegex = /<a[^>]+href="(\/ofertas-de-trabajo\/oferta-de-trabajo-de-[^"#]+)[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+      const seen = new Set();
+      let m;
+      while ((m = linkRegex.exec(html)) !== null) {
+        const path = m[1];
+        if (seen.has(path)) continue;
+        seen.add(path);
+        const title = decodeEntities(m[2].replace(/<[^>]+>/g, '').trim());
+        if (!title) continue;
+        if (!titleFilter(title)) continue;
+
+        // Try to find nearby company name (Computrabajo uses <p class="dIB fs16"> or similar)
+        const ctxStart = Math.max(0, m.index - 400);
+        const ctxEnd = Math.min(html.length, m.index + m[0].length + 600);
+        const ctx = html.slice(ctxStart, ctxEnd);
+        const companyMatch = ctx.match(/<(?:p|span|a)[^>]*class="[^"]*(?:it-blank|fs16|dFlex)[^"]*"[^>]*>([^<]{2,60})</);
+        const locMatch = ctx.match(/<(?:p|span)[^>]*class="[^"]*(?:fs14|location|place)[^"]*"[^>]*>([^<]{2,80})</);
+
+        jobs.push({
+          title,
+          url: `https://mx.computrabajo.com${path}`,
+          company: decodeEntities(companyMatch?.[1].trim() || 'Unknown'),
+          location: decodeEntities(locMatch?.[1].trim() || 'México'),
+          source: `computrabajo:${slug}`,
+        });
+      }
+      // polite delay between keywords
+      await new Promise(r => setTimeout(r, 1500));
+    } catch (err) {
+      throw new Error(`Computrabajo '${kw}': ${err.message}`);
+    }
+  }
+  return jobs;
+}
+
+async function fetchLinkedInMX(queries, titleFilter) {
+  // queries = [{ keywords: 'marketing', location: 'Mexico', geoId?: string }]
+  // Use the public guest endpoint that serves HTML fragments without login.
+  const jobs = [];
+  for (const q of queries) {
+    const params = new URLSearchParams({
+      keywords: q.keywords,
+      location: q.location || 'Mexico',
+      start: '0',
+    });
+    if (q.geoId) params.set('geoId', q.geoId);
+    const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params}`;
+    try {
+      const html = await fetchHtmlBrowserLike(url);
+      // Guest API returns <li>s with base-card__full-link anchors. Be permissive.
+      const cardRegex = /<a[^>]+href="(https:\/\/[^"]*linkedin\.com\/jobs\/view\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+      let m;
+      const seen = new Set();
+      while ((m = cardRegex.exec(html)) !== null) {
+        const rawUrl = m[1];
+        // Normalize: strip query params after job id for dedup
+        const idMatch = rawUrl.match(/jobs\/view\/[^?#]*?(\d{6,})/);
+        const canonical = idMatch ? `https://www.linkedin.com/jobs/view/${idMatch[1]}/` : rawUrl;
+        if (seen.has(canonical)) continue;
+        seen.add(canonical);
+
+        const inner = m[2];
+        const titleMatch = inner.match(/<(?:h3|span)[^>]*>([\s\S]*?)<\/(?:h3|span)>/);
+        const title = decodeEntities((titleMatch?.[1] || '').replace(/<[^>]+>/g, '').trim());
+        if (!title || !titleFilter(title)) continue;
+
+        // Look ahead/behind for company name + location
+        const ctxStart = Math.max(0, m.index - 100);
+        const ctxEnd = Math.min(html.length, m.index + m[0].length + 500);
+        const ctx = html.slice(ctxStart, ctxEnd);
+        const companyMatch = ctx.match(/base-search-card__subtitle[^>]*>[\s\S]*?<a[^>]*>([^<]+)</)
+          || ctx.match(/job-search-card__subtitle[^>]*>([^<]+)</);
+        const locMatch = ctx.match(/job-search-card__location[^>]*>([^<]+)</);
+
+        jobs.push({
+          title,
+          url: canonical,
+          company: decodeEntities(companyMatch?.[1].trim() || 'Unknown'),
+          location: decodeEntities(locMatch?.[1].trim() || q.location || 'México'),
+          source: `linkedin-mx:${slugify(q.keywords)}`,
+        });
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    } catch (err) {
+      throw new Error(`LinkedIn MX '${q.keywords}': ${err.message}`);
+    }
+  }
+  return jobs;
+}
+
 // Domains that are never job postings
 const NOISE_DOMAINS = /amazon\.|mercadolibre\.|ebay\.|walmart\.|aliexpress\.|facebook\.com(?!\/jobs)|twitter\.com|instagram\.com|youtube\.com|wikipedia\.org|pinterest\.|tiktok\./i;
 const NOISE_PATHS = /\/privacy|\/terms|\/about-us|\/legal|\/blog\/|\/article\/|\/cart|\/product|\/dp\/|\/review/i;
@@ -488,6 +632,50 @@ async function main() {
     console.log(`  WeWorkRemotely: ${wwrJobs.length} found, ${wwrNew} new`);
   } catch (err) {
     errors.push({ company: 'WeWorkRemotely', error: err.message });
+  }
+
+  // 4d. Mexican portals (opt-in via portals.yml `mx_feeds` section)
+  const mxFeeds = config.mx_feeds || {};
+
+  if (mxFeeds.computrabajo?.enabled && Array.isArray(mxFeeds.computrabajo.keywords)) {
+    console.log('\nScanning Mexican portals...');
+    try {
+      const ctJobs = await fetchComputrabajo(mxFeeds.computrabajo.keywords, titleFilter);
+      totalFound += ctJobs.length;
+      let ctNew = 0;
+      for (const job of ctJobs) {
+        if (seenUrls.has(job.url)) { totalDupes++; continue; }
+        const key = `${job.company.toLowerCase()}::${job.title.toLowerCase()}`;
+        if (seenCompanyRoles.has(key)) { totalDupes++; continue; }
+        seenUrls.add(job.url);
+        seenCompanyRoles.add(key);
+        newOffers.push(job);
+        ctNew++;
+      }
+      console.log(`  Computrabajo MX: ${ctJobs.length} found, ${ctNew} new`);
+    } catch (err) {
+      errors.push({ company: 'Computrabajo', error: err.message });
+    }
+  }
+
+  if (mxFeeds.linkedin_mx?.enabled && Array.isArray(mxFeeds.linkedin_mx.queries)) {
+    try {
+      const liJobs = await fetchLinkedInMX(mxFeeds.linkedin_mx.queries, titleFilter);
+      totalFound += liJobs.length;
+      let liNew = 0;
+      for (const job of liJobs) {
+        if (seenUrls.has(job.url)) { totalDupes++; continue; }
+        const key = `${job.company.toLowerCase()}::${job.title.toLowerCase()}`;
+        if (seenCompanyRoles.has(key)) { totalDupes++; continue; }
+        seenUrls.add(job.url);
+        seenCompanyRoles.add(key);
+        newOffers.push(job);
+        liNew++;
+      }
+      console.log(`  LinkedIn MX: ${liJobs.length} found, ${liNew} new`);
+    } catch (err) {
+      errors.push({ company: 'LinkedIn MX', error: err.message });
+    }
   }
 
   // 4c. DuckDuckGo web search (opt-in with --ddg flag — rate-limited from servers)
