@@ -13,7 +13,7 @@ Diseñadora creativa y estratega con más de 10 años de experiencia en desarrol
 
 ### Grupo Pueblo Bonito — Los Cabos, BCS
 **Coordinadora de Endomarketing**
-2022 – 2026
+2022 – Actualidad
 
 - Desarrollo y ejecución de estrategias de comunicación interna
 - Planeación de campañas de endomarketing para cultura organizacional

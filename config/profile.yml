@@ -68,3 +68,10 @@ location:
   visa_status: "Ciudadana mexicana"
   remote_work: "Available for remote US/international roles from Mexico (UTC-7, overlaps US Pacific/Mountain/Central)"
   languages: "Spanish (native), English (professional working proficiency)"
+
+# -- Language / modes preference --
+# Tells career-ops to use the Spanish mode files at modes/es/ instead of the
+# default modes/. Convention mirrors modes/pt/README.md and modes/de/README.md.
+language:
+  primary: es-mx
+  modes_dir: modes/es
