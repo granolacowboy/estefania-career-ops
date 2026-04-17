@@ -19,46 +19,199 @@ const statusLabels: Record<string, string> = {
 };
 
 const statuses = ['Todas', ...new Set(jobs.map((j) => j.status).filter(Boolean))];
+
+const scoreBuckets = [
+  { id: 'all', label: 'Todos', min: 0, max: 10 },
+  { id: 'top', label: '4.5+', min: 4.5, max: 10 },
+  { id: 'high', label: '4.0–4.5', min: 4.0, max: 4.499 },
+  { id: 'mid', label: '3.5–4.0', min: 3.5, max: 3.999 },
+  { id: 'low', label: '< 3.5', min: 0, max: 3.499 },
+];
+
+const sortOptions = [
+  { id: 'score-desc', label: 'Score ↓' },
+  { id: 'score-asc', label: 'Score ↑' },
+  { id: 'date-desc', label: 'Fecha ↓' },
+  { id: 'date-asc', label: 'Fecha ↑' },
+  { id: 'company', label: 'Empresa A–Z' },
+];
 ---
 
-<nav class="flex flex-wrap gap-2" id="status-filter">
-  {statuses.map((s) => (
-    <button
-      data-status={s === 'Todas' ? 'all' : s}
-      class:list={[
-        'rounded-full px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-500',
-        s === 'Todas'
-          ? 'bg-brand-600 text-white'
-          : 'bg-white text-gray-600 hover:bg-brand-100 dark:bg-dark-card dark:text-brand-300 dark:hover:bg-brand-800',
-      ]}
-    >
-      {s === 'Todas' ? s : (statusLabels[s] || s)}
-    </button>
-  ))}
-</nav>
+<div class="space-y-3" id="filter-bar" data-filter-bar>
+  <!-- Status chips -->
+  <nav class="flex flex-wrap gap-2" data-filter-group="status">
+    {statuses.map((s) => (
+      <button
+        data-status={s === 'Todas' ? 'all' : s}
+        class:list={[
+          'rounded-full px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-500',
+          s === 'Todas'
+            ? 'bg-brand-600 text-white'
+            : 'bg-white text-gray-600 hover:bg-brand-100 dark:bg-dark-card dark:text-brand-300 dark:hover:bg-brand-800',
+        ]}
+      >
+        {s === 'Todas' ? s : (statusLabels[s] || s)}
+      </button>
+    ))}
+  </nav>
+
+  <!-- Score bucket + sort + search row -->
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-1 rounded-md bg-gray-100 p-1 dark:bg-brand-800">
+      <span class="px-2 text-xs font-medium text-gray-500 dark:text-brand-400">Score:</span>
+      {scoreBuckets.map((b) => (
+        <button
+          data-score-bucket={b.id}
+          data-min={b.min}
+          data-max={b.max}
+          class:list={[
+            'rounded px-2 py-1 text-xs font-medium transition-colors cursor-pointer',
+            b.id === 'all'
+              ? 'bg-brand-600 text-white'
+              : 'text-gray-600 hover:bg-white hover:text-brand-700 dark:text-brand-300 dark:hover:bg-brand-700',
+          ]}
+        >
+          {b.label}
+        </button>
+      ))}
+    </div>
+
+    <label class="flex items-center gap-1 rounded-md bg-gray-100 p-1 dark:bg-brand-800">
+      <span class="px-2 text-xs font-medium text-gray-500 dark:text-brand-400">Orden:</span>
+      <select
+        data-sort
+        class="rounded bg-white px-2 py-1 text-xs text-gray-700 focus:outline-none dark:bg-brand-900 dark:text-brand-200"
+      >
+        {sortOptions.map((o) => (
+          <option value={o.id}>{o.label}</option>
+        ))}
+      </select>
+    </label>
+
+    <label class="flex flex-1 items-center gap-1 rounded-md bg-gray-100 p-1 dark:bg-brand-800 sm:min-w-[200px]">
+      <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input
+        type="search"
+        data-search
+        placeholder="Buscar empresa o puesto..."
+        class="w-full bg-transparent px-1 py-1 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none dark:text-brand-200 dark:placeholder:text-brand-500"
+      />
+    </label>
+
+    <div class="ml-auto text-xs text-gray-500 dark:text-brand-400" data-result-count></div>
+  </div>
+</div>
 
 <script>
-  const buttons = document.querySelectorAll<HTMLButtonElement>('#status-filter button');
-  const cards = document.querySelectorAll<HTMLElement>('[data-job-status]');
+  const bar = document.querySelector('[data-filter-bar]');
+  if (bar) {
+    const statusBtns = bar.querySelectorAll<HTMLButtonElement>('[data-filter-group="status"] button');
+    const scoreBtns = bar.querySelectorAll<HTMLButtonElement>('[data-score-bucket]');
+    const sortSelect = bar.querySelector<HTMLSelectElement>('[data-sort]')!;
+    const searchInput = bar.querySelector<HTMLInputElement>('[data-search]')!;
+    const countEl = bar.querySelector<HTMLElement>('[data-result-count]')!;
+    const cardsContainer = document.querySelector('[data-jobs-container]') as HTMLElement | null;
 
-  buttons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const status = btn.dataset.status;
+    let state = {
+      status: 'all',
+      scoreMin: 0,
+      scoreMax: 10,
+      search: '',
+      sort: 'score-desc',
+    };
 
+    function setActive(buttons: NodeListOf<HTMLButtonElement>, target: HTMLButtonElement) {
       buttons.forEach((b) => {
         b.classList.remove('bg-brand-600', 'text-white');
-        b.classList.add('bg-white', 'text-gray-600', 'dark:bg-dark-card', 'dark:text-brand-300');
-      });
-      btn.classList.remove('bg-white', 'text-gray-600', 'dark:bg-dark-card', 'dark:text-brand-300');
-      btn.classList.add('bg-brand-600', 'text-white');
-
-      cards.forEach((card) => {
-        if (status === 'all' || card.dataset.jobStatus === status) {
-          card.classList.remove('hidden');
+        const isScore = b.hasAttribute('data-score-bucket');
+        if (!isScore) {
+          b.classList.add('bg-white', 'text-gray-600', 'dark:bg-dark-card', 'dark:text-brand-300');
         } else {
-          card.classList.add('hidden');
+          b.classList.add('text-gray-600', 'dark:text-brand-300');
         }
       });
+      target.classList.remove('bg-white', 'text-gray-600', 'dark:bg-dark-card', 'dark:text-brand-300');
+      target.classList.add('bg-brand-600', 'text-white');
+    }
+
+    function applyFilters() {
+      if (!cardsContainer) return;
+      const cards = Array.from(cardsContainer.querySelectorAll<HTMLElement>('article[data-job-status]'));
+      const search = state.search.trim().toLowerCase();
+      let visible = 0;
+
+      cards.forEach((card) => {
+        const status = card.dataset.jobStatus || '';
+        const score = parseFloat(card.dataset.jobScore || '0');
+        const company = card.dataset.jobCompany || '';
+        const role = card.dataset.jobRole || '';
+
+        const statusOk = state.status === 'all' || status === state.status;
+        const scoreOk = score >= state.scoreMin && score <= state.scoreMax;
+        const searchOk = !search || company.includes(search) || role.includes(search);
+        const show = statusOk && scoreOk && searchOk;
+
+        card.classList.toggle('hidden', !show);
+        if (show) visible++;
+      });
+
+      // Sort visible cards
+      const sorted = cards
+        .filter((c) => !c.classList.contains('hidden'))
+        .sort((a, b) => {
+          switch (state.sort) {
+            case 'score-asc':
+              return parseFloat(a.dataset.jobScore || '0') - parseFloat(b.dataset.jobScore || '0');
+            case 'score-desc':
+              return parseFloat(b.dataset.jobScore || '0') - parseFloat(a.dataset.jobScore || '0');
+            case 'date-asc':
+              return (a.dataset.jobDate || '').localeCompare(b.dataset.jobDate || '');
+            case 'date-desc':
+              return (b.dataset.jobDate || '').localeCompare(a.dataset.jobDate || '');
+            case 'company':
+              return (a.dataset.jobCompany || '').localeCompare(b.dataset.jobCompany || '');
+            default:
+              return 0;
+          }
+        });
+      sorted.forEach((c) => cardsContainer.appendChild(c));
+
+      countEl.textContent = `${visible} de ${cards.length}`;
+    }
+
+    statusBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.status = btn.dataset.status || 'all';
+        setActive(statusBtns, btn);
+        applyFilters();
+      });
     });
-  });
+
+    scoreBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.scoreMin = parseFloat(btn.dataset.min || '0');
+        state.scoreMax = parseFloat(btn.dataset.max || '10');
+        setActive(scoreBtns, btn);
+        applyFilters();
+      });
+    });
+
+    sortSelect.addEventListener('change', () => {
+      state.sort = sortSelect.value;
+      applyFilters();
+    });
+
+    let searchTimer: number | null = null;
+    searchInput.addEventListener('input', () => {
+      if (searchTimer) window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(() => {
+        state.search = searchInput.value;
+        applyFilters();
+      }, 150);
+    });
+
+    applyFilters();
+  }
 </script>

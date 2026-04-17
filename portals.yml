@@ -64,7 +64,42 @@ title_filter:
     - "Jefa"
     - "Responsable"
 
-# -- Search queries --
+# -- Mexican portal feeds --
+# Direct scrapers for MX job boards. No API key needed.
+# Run with `node scan.mjs` — these run automatically if enabled.
+
+mx_feeds:
+  computrabajo:
+    enabled: true
+    # Each keyword becomes a search page: mx.computrabajo.com/trabajo-de-<slug>
+    # Keep to single-word keywords for best results.
+    keywords:
+      - "marketing"
+      - "branding"
+      - "diseno-grafico"
+      - "comunicacion-interna"
+      - "endomarketing"
+      - "contenido"
+
+  linkedin_mx:
+    enabled: true
+    # Each query hits LinkedIn's public guest endpoint (no login required).
+    # `keywords` is the search string, `location` is a LinkedIn geography name.
+    queries:
+      - keywords: "marketing"
+        location: "Los Cabos, Baja California Sur, Mexico"
+      - keywords: "brand manager"
+        location: "Mexico"
+      - keywords: "endomarketing"
+        location: "Mexico"
+      - keywords: "diseñador gráfico senior"
+        location: "Mexico"
+      - keywords: "estratega de contenido"
+        location: "Mexico"
+      - keywords: "coordinador marketing"
+        location: "Mexico"
+
+# -- Search queries (DuckDuckGo — opt-in via --ddg flag) --
 # Targeting Mexican job boards and LinkedIn for design/marketing roles
 
 search_queries:
