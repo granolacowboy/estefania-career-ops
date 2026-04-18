@@ -31,8 +31,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const token = process.env.GH_TOKEN;
-  const repo = process.env.GH_REPO;
+  const token = process.env.GH_TOKEN?.trim();
+  const repo = process.env.GH_REPO?.trim();
 
   if (!token || !repo) {
     return res.status(500).json({ error: 'GH_TOKEN or GH_REPO not configured' });
