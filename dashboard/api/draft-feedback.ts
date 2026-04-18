@@ -16,7 +16,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 const VALID_SECTIONS = ['cover_letter', 'questions', 'linkedin_hm', 'linkedin_rec'];
 const VALID_SIGNALS = ['up', 'down'];
 const DISTILL_THRESHOLD = 5;
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 const MAX_RAW_FEEDBACK = 20;
 
 // ── GitHub helpers ──────────────────────────────────────────────────

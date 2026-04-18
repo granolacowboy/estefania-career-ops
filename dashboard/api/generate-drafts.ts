@@ -13,7 +13,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 const GEMINI_MAX_TOKENS = 4096;
 const FETCH_TIMEOUT_MS = 45_000;
 
